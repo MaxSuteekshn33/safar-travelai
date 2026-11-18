@@ -10,7 +10,9 @@ import { SCHEMA_STATEMENTS } from "./schema-sql";
  * database goes there. That copy is temporary: it is lost when the server
  * instance is recycled and is not shared between instances.
  */
-export const EPHEMERAL_DB = !!process.env.VERCEL && !process.env.DATABASE_URL;
+const onServerlessHost = !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT);
+// Any SQLite file path is unusable there (a stray .env can supply one), so only /tmp counts.
+export const EPHEMERAL_DB = onServerlessHost && (!process.env.DATABASE_URL || process.env.DATABASE_URL.startsWith("file:"));
 const databaseUrl = EPHEMERAL_DB ? "file:/tmp/safar.db" : (process.env.DATABASE_URL || "file:./dev.db");
 
 const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createClient> };

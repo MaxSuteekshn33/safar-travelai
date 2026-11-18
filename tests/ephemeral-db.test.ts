@@ -8,8 +8,7 @@ describe("temporary database on a read-only host", () => {
   beforeAll(() => {
     rmSync("/tmp/safar.db", { force: true });
     process.env.VERCEL = "1";
-    // Empty rather than deleted: Prisma reads the local .env file on import and would fill it back in.
-    process.env.DATABASE_URL = "";
+    process.env.DATABASE_URL = "file:./dev.db"; // as a stray .env would supply it
     vi.resetModules();
   });
   afterAll(() => {
