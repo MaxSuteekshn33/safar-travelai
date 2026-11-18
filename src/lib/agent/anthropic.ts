@@ -78,7 +78,7 @@ setResearchRunner(anthropicResearchRunner);
 /** Turns SDK errors into a sentence the traveller can act on. */
 export function describeModelError(err: unknown): string {
   if (err instanceof Anthropic.AuthenticationError) {
-    return "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env.local and restart the server.";
+    return "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY (in .env.local on your machine, or in the project's environment variables on Vercel), then restart or redeploy.";
   }
   if (err instanceof Anthropic.PermissionDeniedError) {
     return "This API key is not allowed to use the model. Check the key's workspace and model access.";
@@ -96,7 +96,7 @@ export function describeModelError(err: unknown): string {
     return `The model service returned an error (${err.status ?? "unknown"}). Try again in a moment.`;
   }
   if (err instanceof Error && /api[_ ]?key|authToken|credentials/i.test(err.message)) {
-    return "No Anthropic API key found. Add ANTHROPIC_API_KEY to .env.local and restart the server.";
+    return "No Anthropic API key found. Add ANTHROPIC_API_KEY (to .env.local on your machine, or to the project's environment variables on Vercel), then restart or redeploy.";
   }
   return "Something went wrong while replying. Try again.";
 }

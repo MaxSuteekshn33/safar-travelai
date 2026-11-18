@@ -205,8 +205,8 @@ export function Chat(props: {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
         {!hasModelKey && (
           <div role="alert" className="mb-4 rounded-xl border border-saffron/40 bg-saffron-soft px-4 py-3 text-sm">
-            <strong>No Anthropic API key found.</strong> Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> in
-            the project folder and restart the server. Until then Safar cannot reply.
+            <strong>No Anthropic API key found.</strong> Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> on your machine, or
+            to the project&rsquo;s environment variables on Vercel, then restart or redeploy. Until then Safar cannot reply.
           </div>
         )}
 
