@@ -111,12 +111,19 @@ export function useVoice(chat: ChatApi, makeProvider: () => VoiceProvider = crea
     [settle],
   );
 
+  // The speech engine is set up exactly once. It reaches the latest callbacks
+  // through this ref, so a callback changing identity can never tear the
+  // engine down and set it up again (which re-rendered the page in a loop).
+  const live = useRef({ makeProvider, ask, bargeIn, listenContinuously });
+  useEffect(() => {
+    live.current = { makeProvider, ask, bargeIn, listenContinuously };
+  });
+
   // Set up the provider in the browser only, so server and first client render match.
   useEffect(() => {
-    const p = makeProvider();
+    const p = live.current.makeProvider();
     provider.current = p;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- capability detection needs the browser
-    setSupport({ listen: p.canListen, speak: p.canSpeak });
+    setSupport((prev) => (prev && prev.listen === p.canListen && prev.speak === p.canSpeak ? prev : { listen: p.canListen, speak: p.canSpeak }));
     speaker.current = p.createSpeaker();
     if (p.canListen) {
       recognizer.current = p.createRecognizer({
@@ -125,7 +132,7 @@ export function useVoice(chat: ChatApi, makeProvider: () => VoiceProvider = crea
           // While Safar is talking the mic also hears Safar. Only real new speech interrupts.
           if (busy && isEchoOfSpeech(text, spoken.current)) return;
           if (busy && text.length >= 3) {
-            bargeIn();
+            live.current.bargeIn();
             setPhase("listening");
           }
           setInterim(holdingRef.current ? `${heard.current} ${text}`.trim() : text);
@@ -137,8 +144,8 @@ export function useVoice(chat: ChatApi, makeProvider: () => VoiceProvider = crea
             return;
           }
           if ((phaseRef.current === "speaking" || phaseRef.current === "thinking") && isEchoOfSpeech(text, spoken.current)) return;
-          if (phaseRef.current !== "listening") bargeIn();
-          void ask(text);
+          if (phaseRef.current !== "listening") live.current.bargeIn();
+          void live.current.ask(text);
         },
         onError: (code) => {
           setError(ERROR_TEXT[code]);
@@ -151,7 +158,7 @@ export function useVoice(chat: ChatApi, makeProvider: () => VoiceProvider = crea
         onEnd: () => {
           if (holdingRef.current) return; // released: handled in release()
           // The browser ends recognition after a silence; hands-free keeps it going.
-          if (handsFreeRef.current) window.setTimeout(listenContinuously, 150);
+          if (handsFreeRef.current) window.setTimeout(() => live.current.listenContinuously(), 150);
         },
       });
     }
@@ -161,7 +168,7 @@ export function useVoice(chat: ChatApi, makeProvider: () => VoiceProvider = crea
       recognizer.current?.abort();
       speaker.current?.cancel();
     };
-  }, [makeProvider, ask, bargeIn, listenContinuously]);
+  }, []);
 
   /** Push-to-talk: call on press. */
   const press = useCallback(() => {

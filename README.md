@@ -33,6 +33,7 @@ Open http://localhost:3000.
 | `SAFAR_EFFORT` | No | Reasoning effort: `low` (default, fastest replies), `medium` or `high`. |
 | `SAFAR_RESEARCH` | No | Set to `mock` to use offline sample notes instead of web research. |
 | `SAFAR_OFFLINE` | No | Set to `1` to force every travel source to its mock, with no network calls. |
+| `SAFAR_DEMO_DATA` | No | Sample history for demos: a saved profile, two past trips and one upcoming trip with simulated bookings, all fictional. A hosted copy adds it by itself; set to `1` to add it locally, or `0` to switch it off. |
 | `DATABASE_URL` | No | SQLite file location. Default `file:./dev.db` (in the `prisma` folder). |
 
 What each source uses:
@@ -89,7 +90,7 @@ The app deploys as a standard Next.js project. Set these in the Vercel project's
 
 Do **not** set `DATABASE_URL` on Vercel.
 
-**Data on Vercel is temporary.** Vercel's filesystem is read-only except `/tmp`, so the hosted copy keeps its SQLite database there and creates its tables at startup. That data is lost whenever Vercel recycles the server, and is not shared if Vercel runs more than one instance, so a conversation can occasionally reset mid-way. The app shows a banner saying so and tells you when a conversation was lost. Making hosted data permanent needs a hosted database, which is not set up.
+**Data on Vercel is temporary.** Vercel's filesystem is read-only except `/tmp`, so the hosted copy keeps its SQLite database there and creates its tables at startup. That data is lost whenever Vercel recycles the server, and is not shared if Vercel runs more than one instance, so a conversation can occasionally reset mid-way. The app shows a banner saying so and tells you when a conversation was lost. Each fresh hosted database starts with the sample history (see `SAFAR_DEMO_DATA`), so My trips and the profile are never empty in a demo; anything deleted there can come back when the server is recycled. Making hosted data permanent needs a hosted database, which is not set up.
 
 It is also worth setting a monthly spend limit on the API key in the Anthropic Console.
 

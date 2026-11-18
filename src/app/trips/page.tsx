@@ -43,6 +43,9 @@ function Legs({ label, segments }: { label: string; segments: FlightSegment[] })
 function BookingCard({ b, onCancel, onDisrupt, busy }: { b: BookingView; onCancel: (b: BookingView) => void; onDisrupt: (b: BookingView) => void; busy: boolean }) {
   const [confirming, setConfirming] = useState(false);
   const offer = b.offer;
+  // A confirmed booking whose trip has begun is shown as completed: nothing more can be done to it.
+  const [now] = useState(() => Date.now());
+  const completed = b.status === "confirmed" && Date.parse(isFlight(offer) ? offer.outbound[0].departAt : `${offer.checkIn}T14:00:00`) <= now;
   return (
     <article className="break-inside-avoid rounded-2xl border border-line bg-card p-5 print:border-black">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -52,7 +55,7 @@ function BookingCard({ b, onCancel, onDisrupt, busy }: { b: BookingView; onCance
         </div>
         <div className="text-right">
           <p className="font-mono text-lg font-semibold tracking-widest">{b.reference}</p>
-          <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[b.status]}`}>{b.status}</span>
+          <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium ${completed ? "bg-line text-ink" : STATUS_STYLE[b.status]}`}>{completed ? "completed" : b.status}</span>
         </div>
       </header>
 
@@ -112,7 +115,7 @@ function BookingCard({ b, onCancel, onDisrupt, busy }: { b: BookingView; onCance
               {when(e.at)}: {e.text}
             </li>
           ))}
-          {b.status !== "cancelled" && (
+          {b.status !== "cancelled" && !completed && (
             <>
               <li>If cancelled now: {b.cancelTerms.explanation}</li>
               <li>If changed now: {b.changeTerms.explanation}</li>
@@ -121,7 +124,14 @@ function BookingCard({ b, onCancel, onDisrupt, busy }: { b: BookingView; onCance
         </ul>
       </details>
 
-      {b.status !== "cancelled" && (
+      {completed && (
+        <div className="mt-4 print:hidden">
+          <button type="button" onClick={() => window.print()} className="h-9 rounded-lg border border-line px-3 text-sm font-medium hover:border-saffron">
+            Print or save as PDF
+          </button>
+        </div>
+      )}
+      {b.status !== "cancelled" && !completed && (
         <div className="mt-4 flex flex-wrap items-center gap-2 print:hidden">
           {confirming ? (
             <>

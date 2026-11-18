@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { emptyItinerary, type Itinerary, type TravelerProfile } from "@/lib/types";
 import type { OfferKind, Store, StoredMessage, TripSummary } from "./store";
 
+import { demoDataEnabled, seedDemoData } from "./demo-seed";
 import { SCHEMA_STATEMENTS } from "./schema-sql";
 
 /**
@@ -21,11 +22,20 @@ function createClient() {
   const base = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   // On an ephemeral database the tables must be created at startup. Every
   // query waits for that once; locally the tables come from `npm run db:push`.
+  // The same step adds the sample history where that is switched on.
   let ready: Promise<void> | undefined;
   const ensureSchema = () =>
     (ready ??= (async () => {
-      if (!EPHEMERAL_DB && process.env.SAFAR_AUTO_SCHEMA !== "1") return;
-      for (const statement of SCHEMA_STATEMENTS) await base.$executeRawUnsafe(statement);
+      if (EPHEMERAL_DB || process.env.SAFAR_AUTO_SCHEMA === "1") {
+        for (const statement of SCHEMA_STATEMENTS) await base.$executeRawUnsafe(statement);
+      }
+      if (!demoDataEnabled(EPHEMERAL_DB)) return;
+      try {
+        await seedDemoData(base);
+      } catch (error) {
+        // Sample history is a nicety; the app must work without it.
+        console.error("Could not add the sample history:", error);
+      }
     })());
   return base.$extends({
     query: {
