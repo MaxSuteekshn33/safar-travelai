@@ -1,0 +1,82 @@
+generator client {
+  provider      = "prisma-client-js"
+  // "native" for local development, the second for Vercel's Linux runtime.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String?
+  // JSON-encoded Itinerary (see src/lib/types.ts)
+  itinerary String    @default("{}")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+  offers    Offer[]
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  // JSON-encoded Anthropic content blocks, stored exactly as sent/received
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, id])
+}
+
+// Flight and stay offers returned by search tools, so the itinerary can
+// reference them by id instead of the model retyping prices.
+model Offer {
+  id             String       @id
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  kind           String
+  data           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+// Single-user app: one profile row with id 1.
+model Profile {
+  id        Int      @id @default(1)
+  data      String   @default("{}")
+  updatedAt DateTime @updatedAt
+}
+
+// Simulated bookings. No real reservation or payment is ever made.
+model Booking {
+  id             String   @id @default(cuid())
+  reference      String   @unique
+  conversationId String?
+  kind           String // flight | stay
+  status         String // confirmed | cancelled | disrupted
+  // JSON-encoded BookingData (see src/lib/bookings/types.ts)
+  data           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([conversationId])
+}
+
+// Something the agent proposed that changes a booking. It only happens when
+// the traveller confirms it in the app; the agent cannot confirm it.
+model PendingAction {
+  id             String   @id @default(cuid())
+  conversationId String
+  type           String // book | cancel | change
+  status         String   @default("pending") // pending | confirmed | declined
+  summary        String
+  payload        String
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, status])
+}
